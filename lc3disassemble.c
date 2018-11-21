@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
 		//printf("\t%.4x\n", full);
 	}
 	free(buffer);
+	return 0;
 }
 
 void disassemble(uint16_t n) {

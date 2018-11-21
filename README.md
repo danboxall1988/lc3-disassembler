@@ -3,6 +3,6 @@ A simple disassembler for l3c obj files. Takes obj files as input and outputs lc
 
 Compile with gcc lc3disassemble.c -o lc3dis
 
-Usage: lc3dis <filename>.obj
+Usage: lc3dis filename.obj
   
 

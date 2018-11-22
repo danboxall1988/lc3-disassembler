@@ -82,7 +82,6 @@ int main(int argc, char *argv[]) {
 		full = (left << 8) | right;
 		printbin(full);
 		disassemble(full);
-		//printf("\t%.4x\n", full);
 	}
 	free(buffer);
 }
@@ -94,33 +93,33 @@ void disassemble(uint16_t n) {
 	switch (op) {
 		case OP_BR: {
 			int nzp = (instr >> 9) & 0x7;
+			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
 			switch (nzp) {
 				case 1: 	// positive only
-					printf("\tBNp\n");
+					printf("\tBNp x%.4X\n", pc_offset);
 					break;
 				case 2: 	// zero flag only
-					printf("\tBNz\n");
+					printf("\tBNz x%.4X\n", pc_offset);
 					break;
 				case 3: 	// zero or positive 
-					printf("\tBNzp\n");
+					printf("\tBNzp x%.4X\n", pc_offset);
 					break;
 				case 4: 	// negative only
-					printf("\tBNn\n");
+					printf("\tBNn x%.4X\n", pc_offset);
 					break;
 				case 5:		// neg or pos
-					printf("\tBNnp\n");
+					printf("\tBNnp x%.4X\n", pc_offset);
 					break;
 				case 6: 	// neg or zero
-					printf("\tBNnz");
+					printf("\tBNnz x%.4X\n", pc_offset);
 					break;
 				case 7:		// unconditional, or nzp 
-					printf("\tBN\n");
+					printf("\tBN x%.4X\n", pc_offset);
 					break;
 				case 0:
 				/* if no bits are set, then it's not a BR, but
 				 * instead is data */
 					print_fill(instr);
-					//print_fill(instr);
 					break;
 			} // end nzp switch
 			break;
@@ -146,23 +145,23 @@ void disassemble(uint16_t n) {
 			uint16_t dr = (instr >> 9) & 0x7;
 			// find the pc_offset address
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
-			printf("\tLD %s, %X\n", registers[dr], pc_offset);
+			printf("\tLD %s, x%.4X\n", registers[dr], pc_offset);
 			break;
 		}
 		case OP_ST: {
 			uint16_t sr = (instr >> 9) & 0x7;
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
-			printf("\tST %s, %X\n", registers[sr], pc_offset + counter + origin);
+			printf("\tST %s, x%.4X\n", registers[sr], pc_offset);
 			break;
 		}
 		case OP_JSR: {
 			uint16_t flag = (instr >> 11) & 0x1; // bit 11
 			if (flag) { // bit 11 is set to 1 
 				uint16_t pc_offset = (instr & 0x7ff) + counter + origin;
-				printf("\tJSR %X\n", pc_offset);
+				printf("\tJSR x%.4X\n", pc_offset);
 			} else { // bit 11 is 0
 				uint16_t base_r = (instr >> 6) & 0x7;
-				printf("\tJSRr %X\n", base_r);
+				printf("\tJSRr x%.4X\n", base_r);
 			}
 			break;
 		}
@@ -210,13 +209,13 @@ void disassemble(uint16_t n) {
 		case OP_LDI: {
 			uint16_t dr = (instr >> 9) & 0x7;
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
-			printf("\tLDI %s, %X\n", registers[dr], pc_offset);
+			printf("\tLDI %s, x%.4X\n", registers[dr], pc_offset);
 			break;
 		}
 		case OP_STI: {
 			uint16_t sr = (instr >> 9) & 0x7;
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
-			printf("\tSTI %s, %X\n", registers[sr], pc_offset);
+			printf("\tSTI %s, x%.4X\n", registers[sr], pc_offset);
 			break;
 		}
 		case OP_RET: {
@@ -235,17 +234,17 @@ void disassemble(uint16_t n) {
 		case OP_LEA: {
 			uint16_t dr = (instr >> 9) & 0x7;
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
-			printf("\tLEA %s, %X\n", registers[dr], pc_offset);
+			printf("\tLEA %s, x%.4X\n", registers[dr], pc_offset);
 			break;
 		}
 		case OP_TRAP: {
-			// if bits 8-11 are set, then it isn't a trap instruction
-			if ((instr >> 8) & 0xff) {
+			// if bits 8-11 are all set, then it isn't a trap instruction
+			if ((instr >> 8) & 0xff == 0xff) {
 				print_fill(instr);
 				break;
 			}
 			uint16_t trap_vect = instr & 0xff;
-			printf("\tTRAP %X ", trap_vect);
+			printf("\tTRAP x%X ", trap_vect);
 			switch (trap_vect) {
 				case GETC:
 					printf("GETC\n");

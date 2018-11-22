@@ -4,21 +4,21 @@
 #include <math.h>
 
 enum OPCODES {
-	OP_BR,//
-	OP_ADD,//
-	OP_LD,//
-	OP_ST,//
-	OP_JSR,//
-	OP_AND,//
-	OP_LDR,//
-	OP_STR,//
-	OP_RTI,//
-	OP_NOT,//
-	OP_LDI,//
-	OP_STI,//
-	OP_RET,//
+	OP_BR,
+	OP_ADD,
+	OP_LD,
+	OP_ST,
+	OP_JSR,
+	OP_AND,
+	OP_LDR,
+	OP_STR,
+	OP_RTI,
+	OP_NOT,
+	OP_LDI,
+	OP_STI,
+	OP_RET,
 	OP_ILLEGAL,
-	OP_LEA,//
+	OP_LEA,
 	OP_TRAP
 };
 
@@ -55,35 +55,41 @@ int main(int argc, char *argv[]) {
 	}
 	
 	size_t fsize;
+	// find size of file 
 	fseek(f, 0, SEEK_END);
 	fsize = ftell(f);
 	fseek(f, 0, SEEK_SET);
+	// buffer to read file into 
 	unsigned char *buffer = (unsigned char *) malloc(fsize);
 	fread(buffer, fsize, 1, f);
 	fclose(f);
-
+	
+	// left and right are the numbers read in from the file, 
+	// full is the two numbers concentated together
 	uint16_t left, right, full;
 	left = buffer[pc++];
 	right = buffer[pc++];
+	// shift left left by 8 bits, and then bitwise or with right
+	// to concentate 
 	origin += (left << 8) | right;
 	printf("\n.ORIG x%.4x\n\n", origin);
 	
 	while (pc < fsize) {
-		//printf("mem address: %x", origin);
 		++counter;
 		left = buffer[pc++];
 		right = buffer[pc++];
+		// concentate the two numbers 
 		full = (left << 8) | right;
 		printbin(full);
 		disassemble(full);
 		//printf("\t%.4x\n", full);
 	}
 	free(buffer);
-	return 0;
 }
 
 void disassemble(uint16_t n) {
 	int instr = n;
+	// get bits 12-15
 	int op = (instr >> 12) & 0xf;
 	switch (op) {
 		case OP_BR: {
@@ -138,6 +144,7 @@ void disassemble(uint16_t n) {
 		}
 		case OP_LD: {
 			uint16_t dr = (instr >> 9) & 0x7;
+			// find the pc_offset address
 			uint16_t pc_offset = (instr & 0x1ff) + counter + origin;
 			printf("\tLD %s, %X\n", registers[dr], pc_offset);
 			break;
@@ -149,11 +156,11 @@ void disassemble(uint16_t n) {
 			break;
 		}
 		case OP_JSR: {
-			uint16_t flag = (instr >> 11) & 0x1;
-			if (flag) {
+			uint16_t flag = (instr >> 11) & 0x1; // bit 11
+			if (flag) { // bit 11 is set to 1 
 				uint16_t pc_offset = (instr & 0x7ff) + counter + origin;
 				printf("\tJSR %X\n", pc_offset);
-			} else {
+			} else { // bit 11 is 0
 				uint16_t base_r = (instr >> 6) & 0x7;
 				printf("\tJSRr %X\n", base_r);
 			}
@@ -162,9 +169,10 @@ void disassemble(uint16_t n) {
 		case OP_AND: {
 			uint16_t dr = (instr >> 9) & 0x7;
 			uint16_t sr1 = (instr >> 6) & 0x7;
-			uint16_t flag = (instr >> 5) & 0x1;
-			if (flag) {
+			uint16_t flag = (instr >> 5) & 0x1; // bit 5
+			if (flag) { // bit 5 is set to 1
 				int16_t imm5 = instr & 0x1f;
+				// check if bit 5 is set. if it is, then read negative number 
 				if ((imm5 >> 4) & 0x1) {
 					imm5 = read_negative(imm5, 5);
 				}
@@ -212,7 +220,12 @@ void disassemble(uint16_t n) {
 			break;
 		}
 		case OP_RET: {
-			printf("\tRET\n");
+			uint16_t base_r = (instr >> 6) & 0x7;
+			if (base_r == 7) {
+				printf("\tRET\n");
+			} else {
+				printf("\tJMP %s\n", registers[base_r]);
+			}
 			break;
 		}
 		case OP_ILLEGAL: {
